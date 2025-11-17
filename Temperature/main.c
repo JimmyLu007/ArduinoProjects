@@ -1,9 +1,3 @@
-/*
-Team ID: Team 1
-Teacher:Jay
-Class:MCD1160
-*/
-
 #include <LiquidCrystal.h>
 #define TEMP_SENSOR A0
 #define RED_LED 10
@@ -12,7 +6,7 @@ Class:MCD1160
 #define BUTTON 7
 
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
-int unit = 0;
+int unit = '0';
 float celsius = 0;
 bool isFirstTime = true;
 const long interval = 10000;
@@ -36,6 +30,7 @@ void setup()
     Serial.println("4.Display the average temperature");
 }
 
+//function to control RGB
 void RGBControl()
 {
     if (celsius <= 0)
@@ -72,6 +67,7 @@ void RGBControl()
     }
 }
 
+//Function to calculate celsius
 void calculateCelsius()
 {
     int rawTemp = analogRead(TEMP_SENSOR);
@@ -81,16 +77,36 @@ void calculateCelsius()
     celsius = celsius * 100;
 }
 
-void loop()
+//Function to use button change the units
+void buttonControl()
 {
     int buttonState = digitalRead(BUTTON);
+    if (buttonState == HIGH)
+    {
+        if (unit == '4')
+        {
+            unit = '0';
+            delay(100);
+        }
+        else
+        {
+            unit++;
+            delay(100);
+        }
+    }
+
+}
+
+void loop()
+{
+    buttonControl();
 
     calculateCelsius();
     float fahrenheit = celsius * 1.8 + 32;
     float kelvin = celsius + 273.15;
 
-
-    if (unit == 0)
+    // Initial display
+    if (unit == '0')
     {
         int rawTemp = analogRead(TEMP_SENSOR);
         calculateCelsius();
@@ -105,15 +121,40 @@ void loop()
         lcd.print(kelvin);
         lcd.print("K");
         RGBControl();
+        isFirstTime = true;
+        totalCelsius = 0;
+        addTimes = 0;
 
     }
 
+    //get user input and print temperature in serial monitor
     int userInput = (int)Serial.read();
-    if (userInput != -1)
+    //!= -1 because the userinput initial to be -1
+    if (userInput != -1 && userInput == '1' || userInput == '2' || userInput == '3' || userInput == '4')
     {
         unit = userInput;
+        if (unit == '1')
+        {
+            Serial.print("Current Fahrenheit: ");
+            Serial.println(fahrenheit);
+        }
+        if (unit == '2')
+        {
+            Serial.print("Current Celsius: ");
+            Serial.println(celsius);
+        }
+        if (unit == '3')
+        {
+            Serial.print("Current Kelvin: ");
+            Serial.println(kelvin);
+        }
+        if (unit == '4')
+        {
+            Serial.println("Calculating....");
+        }
     }
 
+    //Display the temperature in fahrenheit
     if (unit == '1')
     {
         calculateCelsius();
@@ -128,6 +169,7 @@ void loop()
         delay(100);
     }
 
+    //Display the temperature in celsius
     else if (unit == '2')
     {
         calculateCelsius();
@@ -141,6 +183,7 @@ void loop()
         delay(100);
     }
 
+    //Display the temperature in kelvin
     else if (unit == '3')
     {
         calculateCelsius();
@@ -155,9 +198,9 @@ void loop()
         delay(100);
     }
 
-    if (buttonState == HIGH || unit == '4')
+    //Display the average temperature (in all units)
+    if (unit == '4')
     {
-        unit = '4';
         if (isFirstTime)
         {
             initialTime = millis();
@@ -169,6 +212,7 @@ void loop()
         totalCelsius += celsius;
         addTimes++;
 
+        //calculate average temperature
         if (millis() - initialTime >= interval)
         {
             float averageCelsius = totalCelsius / addTimes;
@@ -187,6 +231,12 @@ void loop()
             isFirstTime = true;
             totalCelsius = 0;
             addTimes = 0;
+            Serial.print("Average Celsius: ");
+            Serial.println(averageCelsius);
+            Serial.print("Average Fahrenheit: ");
+            Serial.println(averageFahrenheit);
+            Serial.print("Average Kelvin: ");
+            Serial.println(averageKelvin);
         }
 
     }
